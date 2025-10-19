@@ -15,7 +15,7 @@ Este script de Python te permite obtener el número total de descargas de todos 
 
 ## Instalación
 
-Puedes instalar este paquete directamente desde PyPI (una vez publicado) o desde el código fuente.
+Puedes instalar este paquete directamente desde PyPI (próximamente) o desde el código fuente.
 
 ### Desde PyPI (próximamente)
 
@@ -27,7 +27,7 @@ pip install github-release-counter
 
 1.  Clona este repositorio:
     ```bash
-    git clone https://github.com/your-username/github-release-counter.git
+    git clone https://github.com/marcomolinaleija/github-release-counter.git
     cd github-release-counter
     ```
 2.  Instala el paquete en modo editable (para desarrollo) o normal:
@@ -75,7 +75,7 @@ from github_release_counter.cli import obtener_stats_descargas
 import os
 
 # Reemplaza con el repositorio que quieras y tu token de GitHub si lo tienes
-repo = "octocat/Spoon-Knife"
+repo = "marcomolinaleija/github-release-counter"
 github_token = os.getenv("GITHUB_TOKEN") # O pásalo directamente como string
 
 releases_data = obtener_stats_descargas(repo, github_token)
@@ -89,23 +89,6 @@ if releases_data:
             print(f"      Asset: {asset['name']}, Descargas: {asset['download_count']}")
 else:
     print(f"No se pudieron obtener los datos de los lanzamientos para {repo}.")
-```
-
-
--   Si no proporcionas `propietario/repositorio`, el script usará `marcomolinaleija/ml-player-releases` por defecto.
-
-### Ejemplos
-
-Para obtener las estadísticas de descargas del repositorio por defecto:
-
-```bash
-python release_download_counter.py
-```
-
-Para obtener las estadísticas de descargas de un repositorio específico (ej. `octocat/Spoon-Knife`):
-
-```bash
-python release_download_counter.py octocat/Spoon-Knife
 ```
 
 ## Contribuciones
