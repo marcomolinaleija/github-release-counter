@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "github-release-counter"
-version = "0.1.0"
+version = "1.1.0"
 authors = [
   { name="Marco ML", email="marcoleija@marco-ml.com" },
 ]
@@ -25,3 +25,4 @@ Homepage = "https://github.com/marcomolinaleija/github-release-counter"
 
 [project.scripts]
 github-release-counter = "github_release_counter.cli:main"
+grc = "github_release_counter.cli:main"

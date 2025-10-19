@@ -15,9 +15,9 @@ Este script de Python te permite obtener el número total de descargas de todos 
 
 ## Instalación
 
-Puedes instalar este paquete directamente desde PyPI (próximamente) o desde el código fuente.
+Puedes instalar este paquete directamente desde PyPI o desde el código fuente.
 
-### Desde PyPI (próximamente)
+### Desde PyPI
 
 ```bash
 pip install github-release-counter
@@ -37,7 +37,7 @@ pip install github-release-counter
 
 ## Uso
 
-Después de la instalación, puedes ejecutar el comando `github-release-counter` directamente en tu terminal.
+Después de la instalación, puedes ejecutar el comando `github-release-counter` (o su alias `grc`) directamente en tu terminal.
 
 ### Argumentos
 
@@ -49,13 +49,13 @@ Después de la instalación, puedes ejecutar el comando `github-release-counter`
 Para obtener las estadísticas de descargas de un repositorio:
 
 ```bash
-github-release-counter marcomolinaleija/github-release-counter
+grc marcomolinaleija/github-release-counter
 ```
 
 Para usar un token de GitHub:
 
 ```bash
-github-release-counter marcomolinaleija/github-release-counter --token Tu_GITHUB_TOKEN
+grc marcomolinaleija/github-release-counter --token Tu_GITHUB_TOKEN
 ```
 
 ### Obtener un Token Personal de Acceso (PAT) de GitHub
