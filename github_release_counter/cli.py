@@ -1,36 +1,64 @@
 import requests
 import argparse
 from datetime import datetime
+from typing import List, Dict, Any, Tuple, Optional
 
-from typing import List, Dict, Any
+# --- Custom Exceptions ---
+class RepoFormatError(Exception):
+    """Excepción para formato de repositorio inválido."""
+    pass
+
+class GitHubAPIError(Exception):
+    """Excepción para errores relacionados con la API de GitHub."""
+    pass
+
+def parse_repo_path(repo_input: str) -> Optional[Tuple[str, str]]:
+    """
+    Analiza la entrada del repositorio para extraer el propietario y el nombre.
+    Admite formatos como 'propietario/repo', URLs https y URLs git.
+    """
+    path = repo_input.strip()
+
+    if path.startswith("https://github.com/"):
+        path = path[len("https://github.com/"):]
+    elif path.startswith("git@github.com:"):
+        path = path[len("git@github.com:"):]
+
+    if path.endswith(".git"):
+        path = path[:-len(".git")]
+    
+    path = path.strip('/')
+
+    if path.lower().endswith('/releases'):
+        path = path[:-len('/releases')].strip('/')
+
+    parts = path.split('/')
+    if len(parts) == 2 and all(parts):
+        return parts[0], parts[1]
+    
+    return None
 
 def obtener_stats_descargas(repo_path: str, github_token: str = None) -> List[Dict[str, Any]]:
     """
     Obtiene las estadísticas de descargas de los lanzamientos de un repositorio de GitHub.
 
     Args:
-        repo_path (str): La ruta del repositorio en formato 'propietario/repositorio'.
+        repo_path (str): La ruta del repositorio en formato 'propietario/repositorio' o una URL de GitHub.
         github_token (str, optional): Token personal de acceso a GitHub para aumentar el límite de la API.
 
     Returns:
         List[Dict[str, Any]]: Una lista de diccionarios, donde cada diccionario representa un lanzamiento
-                              con sus detalles y una lista de sus assets.
+        con sus detalles y una lista de sus assets.
+    
+    Raises:
+        RepoFormatError: Si el formato del repositorio es inválido.
+        GitHubAPIError: Si ocurre un error al comunicarse con la API de GitHub.
     """
+    parsed_repo = parse_repo_path(repo_path)
+    if not parsed_repo:
+        raise RepoFormatError("Formato de repositorio inválido. Debe ser 'propietario/repositorio' o una URL de GitHub válida.")
 
-    # Limpiar posibles errores del input
-    repo_path = repo_path.strip().replace("https://github.com/", "").strip('/')
-
-    # Asegurarse de que esté en formato 'propietario/repositorio'.
-    # Si se ingresa 'propietario/repositorio/releases', se elimina '/releases'.
-    if repo_path.lower().endswith('/releases'):
-        repo_path = repo_path[:-len('/releases')]
-
-    parts = repo_path.split('/')
-    if len(parts) != 2:
-        print("Error: Formato de repositorio inválido. Debe ser 'propietario/repositorio'.")
-        return []
-
-    owner, repo = parts[0], parts[1]
+    owner, repo = parsed_repo
     url = f"https://api.github.com/repos/{owner}/{repo}/releases"
 
     headers = {}
@@ -39,20 +67,20 @@ def obtener_stats_descargas(repo_path: str, github_token: str = None) -> List[Di
 
     try:
         response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        print(f"Error de conexión o HTTP: {e}")
-        return []
+        raise GitHubAPIError(f"Error de conexión o HTTP: {e}") from e
 
     try:
         releases_data = response.json()
-    except requests.exceptions.JSONDecodeError:
-        print("Error: No se pudo decodificar la respuesta JSON de la API.")
-        return []
+    except requests.exceptions.JSONDecodeError as e:
+        raise GitHubAPIError("No se pudo decodificar la respuesta JSON de la API.") from e
 
     if not isinstance(releases_data, list):
-        print("Error: Respuesta inesperada de la API. Se esperaba una lista de lanzamientos.")
-        return []
+        if isinstance(releases_data, dict) and releases_data.get("message") == "Not Found":
+            raise GitHubAPIError(f"Repositorio '{owner}/{repo}' no encontrado o no tienes acceso.")
+        else:
+            raise GitHubAPIError("Respuesta inesperada de la API. Se esperaba una lista de lanzamientos.")
 
     processed_releases = []
     for release in releases_data:
@@ -192,20 +220,23 @@ def main():
     )
     args = parser.parse_args()
     
-    # Clean up input for owner/repo extraction
-    repo_path_cleaned = args.repo_path.strip().replace("https://github.com/", "").strip('/')
-    if repo_path_cleaned.lower().endswith('/releases'):
-        repo_path_cleaned = repo_path_cleaned[:-len('/releases')]
-    parts = repo_path_cleaned.split('/')
-    if len(parts) != 2:
-        print("Error: Formato de repositorio inválido. Debe ser 'propietario/repositorio'.")
-        return
+    try:
+        releases_data = obtener_stats_descargas(args.repo_path, args.token)
+        
+        if releases_data:
+            parsed_repo = parse_repo_path(args.repo_path)
+            if parsed_repo: # Debería pasar siempre si releases_data no está vacío
+                owner, repo = parsed_repo
+                display_stats(owner, repo, releases_data)
+        else:
+            # Si la lista está vacía, significa que no hay lanzamientos.
+            parsed_repo = parse_repo_path(args.repo_path)
+            if parsed_repo:
+                owner, repo = parsed_repo
+                print(f"El repositorio '{owner}/{repo}' no tiene lanzamientos (releases).")
 
-    owner, repo = parts[0], parts[1]
-
-    releases_data = obtener_stats_descargas(args.repo_path, args.token)
-    if releases_data: # Only display if data was successfully retrieved
-        display_stats(owner, repo, releases_data)
+    except (RepoFormatError, GitHubAPIError) as e:
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()

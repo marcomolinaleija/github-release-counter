@@ -68,27 +68,36 @@ github-release-counter marcomolinaleija/github-release-counter --token Tu_GITHUB
 
 ## Uso como Librería
 
-Puedes importar la función `obtener_stats_descargas` en tus propios scripts de Python para obtener los datos de los lanzamientos de forma programática.
+Puedes importar la función `obtener_stats_descargas` y las excepciones personalizadas en tus propios scripts de Python para obtener los datos de los lanzamientos de forma programática.
 
 ```python
-from github_release_counter.cli import obtener_stats_descargas
+from github_release_counter.cli import obtener_stats_descargas, RepoFormatError, GitHubAPIError
 import os
 
 # Reemplaza con el repositorio que quieras y tu token de GitHub si lo tienes
 repo = "marcomolinaleija/github-release-counter"
 github_token = os.getenv("GITHUB_TOKEN") # O pásalo directamente como string
 
-releases_data = obtener_stats_descargas(repo, github_token)
+try:
+    releases_data = obtener_stats_descargas(repo, github_token)
 
-if releases_data:
-    print(f"Se encontraron {len(releases_data)} lanzamientos para {repo}.")
-    for release in releases_data:
-        print(f"  Lanzamiento: {release['release_name']} (Tag: {release['tag_name']})")
-        print(f"    Total de descargas del lanzamiento: {release['total_release_downloads']}")
-        for asset in release['assets']:
-            print(f"      Asset: {asset['name']}, Descargas: {asset['download_count']}")
-else:
-    print(f"No se pudieron obtener los datos de los lanzamientos para {repo}.")
+    if releases_data:
+        print(f"Se encontraron {len(releases_data)} lanzamientos para {repo}.")
+        for release in releases_data:
+            print(f"  Lanzamiento: {release['release_name']} (Tag: {release['tag_name']})")
+            print(f"    Total de descargas del lanzamiento: {release['total_release_downloads']}")
+            for asset in release['assets']:
+                print(f"      Asset: {asset['name']}, Descargas: {asset['download_count']}")
+    else:
+        # Si la lista está vacía, el repositorio no tiene lanzamientos.
+        print(f"El repositorio {repo} no tiene lanzamientos.")
+
+except RepoFormatError as e:
+    print(f"Error de formato: {e}")
+except GitHubAPIError as e:
+    print(f"Error de API: {e}")
+except Exception as e:
+    print(f"Ocurrió un error inesperado: {e}")
 ```
 
 ## Contribuciones
