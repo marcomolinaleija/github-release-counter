@@ -41,21 +41,35 @@ Después de la instalación, puedes ejecutar el comando `github-release-counter`
 
 ### Argumentos
 
--   `<propietario/repositorio>` (obligatorio): La ruta del repositorio de GitHub en formato `propietario/repositorio` (ej. `marcomolinaleija/github-release-counter`).
--   `--token` o `-t` (opcional): Tu Token Personal de Acceso (PAT) de GitHub. Usar un token aumenta el límite de la API de GitHub, lo que es útil para repositorios con muchos lanzamientos o para evitar interrupciones.
+-   `<propietario/repositorio>` (obligatorio): La ruta del repositorio de GitHub en formato `propietario/repositorio`.
+-   `--token` o `-t` (opcional): Tu Token de Acceso Personal (PAT) de GitHub para aumentar el límite de la API.
+-   `--tags-only` (opcional): Muestra solo los nombres de los tags de los lanzamientos.
+-   `--assets-only` (opcional): Muestra solo los assets de cada lanzamiento y su contador de descargas.
 
 ### Ejemplos
 
-Para obtener las estadísticas de descargas de un repositorio:
+Para obtener las estadísticas completas de un repositorio:
 
 ```bash
 grc marcomolinaleija/github-release-counter
 ```
 
+Para obtener solo los tags:
+
+```bash
+grc marcomolinaleija/github-release-counter --tags-only
+```
+
+Para obtener solo la información de los assets:
+
+```bash
+grc marcomolinaleija/github-release-counter --assets-only
+```
+
 Para usar un token de GitHub:
 
 ```bash
-grc marcomolinaleija/github-release-counter --token Tu_GITHUB_TOKEN
+grc marcomolinaleija/github-release-counter --token TU_GITHUB_TOKEN
 ```
 
 ### Obtener un Token Personal de Acceso (PAT) de GitHub
@@ -68,34 +82,39 @@ grc marcomolinaleija/github-release-counter --token Tu_GITHUB_TOKEN
 
 ## Uso como Librería
 
-Puedes importar la función `obtener_stats_descargas` y las excepciones personalizadas en tus propios scripts de Python para obtener los datos de los lanzamientos de forma programática.
+Con la nueva estructura modular, puedes importar la clase `GitHubAPI` para integrar fácilmente la obtención de datos de lanzamientos en tus propios scripts.
 
 ```python
-from github_release_counter.cli import obtener_stats_descargas, RepoFormatError, GitHubAPIError
+from github_release_counter.github_api import GitHubAPI, RepoFormatError, GitHubAPIError
 import os
 
-# Reemplaza con el repositorio que quieras y tu token de GitHub si lo tienes
-repo = "marcomolinaleija/github-release-counter"
-github_token = os.getenv("GITHUB_TOKEN") # O pásalo directamente como string
+# Repositorio de ejemplo
+REPO = "marcomolinaleija/github-release-counter"
+TOKEN = os.getenv("GITHUB_TOKEN") # Opcional, para aumentar el límite de la API
 
 try:
-    releases_data = obtener_stats_descargas(repo, github_token)
+    # 1. Crear una instancia de la API
+    print(f"Creando instancia para {REPO}...")
+    api = GitHubAPI(repo_path=REPO, github_token=TOKEN)
 
-    if releases_data:
-        print(f"Se encontraron {len(releases_data)} lanzamientos para {repo}.")
-        for release in releases_data:
-            print(f"  Lanzamiento: {release['release_name']} (Tag: {release['tag_name']})")
-            print(f"    Total de descargas del lanzamiento: {release['total_release_downloads']}")
-            for asset in release['assets']:
-                print(f"      Asset: {asset['name']}, Descargas: {asset['download_count']}")
+    # 2. Obtener los datos de los lanzamientos
+    print("Obteniendo lanzamientos...")
+    releases = api.get_releases()
+
+    if releases:
+        print(f"\nSe encontraron {len(releases)} lanzamientos para {api.owner}/{api.repo}.")
+        
+        total_downloads = 0
+        for release in releases:
+            total_downloads += release['total_release_downloads']
+            print(f"- Tag: {release['tag_name']}, Descargas del lanzamiento: {release['total_release_downloads']}")
+
+        print(f"\nDescargas totales de todos los lanzamientos: {total_downloads}")
     else:
-        # Si la lista está vacía, el repositorio no tiene lanzamientos.
-        print(f"El repositorio {repo} no tiene lanzamientos.")
+        print(f"No se encontraron lanzamientos para {REPO}.")
 
-except RepoFormatError as e:
-    print(f"Error de formato: {e}")
-except GitHubAPIError as e:
-    print(f"Error de API: {e}")
+except (RepoFormatError, GitHubAPIError) as e:
+    print(f"Ocurrió un error: {e}")
 except Exception as e:
     print(f"Ocurrió un error inesperado: {e}")
 ```
